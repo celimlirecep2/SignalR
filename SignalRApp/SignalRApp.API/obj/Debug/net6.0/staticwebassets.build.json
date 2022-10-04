@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "sPHw4Y4Fp854mfBRLpAuY10n9cCIKBfJ2Jp5WiUqxc0=",
+  "Source": "SignalRApp.API",
+  "BasePath": "_content/SignalRApp.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

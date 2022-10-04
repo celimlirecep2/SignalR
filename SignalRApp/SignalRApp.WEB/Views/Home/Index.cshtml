@@ -6,10 +6,61 @@
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script type="text/javascript">
 
-        var connection = new signalR.HubConnectionBuilder().withUrl("https://localhost:7093/MyHub");
-        connection.start().then(() => {
+        $(document).ready(() => {
 
-        }).catch((err) => { console.log(err) })
+            //bağlantı oluşturulur - LogLevel.Information: information sonrası için log mesajları alınır
+            //withAutomaticReconnect() - otomatik olarak bağlantı kesildiğinde yeniden bağlanmaya çalışır 4 kere dener olmassa sonlandırır[1saniye,1saniye,3saniye,10saniye]
+            var connection = new signalR.HubConnectionBuilder().configureLogging(signalR.LogLevel.Information).withAutomaticReconnect([1000, 1000, 3000, 10000]).withUrl("https://localhost:7221/MyHub", {
+                skipNegotiation: true,
+                transport: signalR.HttpTransportType.WebSockets
+            }).build();
+            $("#conStatus").text(connection.q);
+            //Bağlantıyı başlatır async
+            connection.start().then(() => {
+                $("#conStatus").text(connection.q);
+            }).catch((err) => { console.log(err) });
+            //bağlanıyor
+            $("#conStatus").text(connection.q);
+
+            $("#btnNameSave").click(() => {
+                connection.invoke("SendName", $("#txtName").val()).catch((err) => console.log(err))
+            });
+
+            connection.on("ReceiveName", (name) => {
+                $("#nameList").append(`<li class="list-group-item"> ${name} </li>`)
+            })
+
+        });
+
+
 
     </script>
 }
+
+    <div class="row">
+        <div class="col-md-8 offset-2">
+            <input class="form-control" type="text" id="txtName" /> <hr />
+            <button class="btn btn-primary" id="btnNameSave">İsim Kaydet</button>
+            <div class="alert alert-info">
+                <div class="clearfix">
+                    <div class="float-start">
+                        Bağlantı durumu: <strong id="conStatus"></strong>
+                    </div>
+                    <div class="float-end">
+                        <div class="col">
+                            <strong class="text-success"><span class="fw-bolder fs-5 text-primary">Y</span>ükleniy</strong>
+                            <!-- aria-hidden="true" ekran okuyucadan kaçır -->
+                            <div class="spinner-border spinner-border-sm text-danger  ms-auto" role="status" aria-hidden="true">
+                            </div>
+                            <strong class="text-success">r<span class="text-dark">...</span></strong>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8 offset-2">
+        <ul id="nameList" class="list-group"></ul>
+    </div>

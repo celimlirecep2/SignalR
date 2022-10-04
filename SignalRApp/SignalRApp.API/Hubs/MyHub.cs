@@ -8,7 +8,7 @@ namespace SignalRApp.API.Hubs
         public async Task SendName(string name)
         {
             Names.Add(name);
-            await   Clients.All.SendAsync("ReceiveName", name);
+            await   Clients.All.SendAsync("ReceiveName", name);//hub içerisindeki clientlerin hepsine mesajı gönderir ve onlarda bu mesajı okur
         }
         public async Task GetNames()
         {
