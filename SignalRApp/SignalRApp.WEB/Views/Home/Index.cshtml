@@ -10,25 +10,69 @@
 
             //bağlantı oluşturulur - LogLevel.Information: information sonrası için log mesajları alınır
             //withAutomaticReconnect() - otomatik olarak bağlantı kesildiğinde yeniden bağlanmaya çalışır 4 kere dener olmassa sonlandırır[1saniye,1saniye,3saniye,10saniye]
-            var connection = new signalR.HubConnectionBuilder().configureLogging(signalR.LogLevel.Information).withAutomaticReconnect([1000, 1000, 3000, 10000]).withUrl("https://localhost:7221/MyHub", {
+            var connection = new signalR.HubConnectionBuilder().configureLogging(signalR.LogLevel.Error).withAutomaticReconnect([1000, 1000, 3000, 10000]).withUrl("https://localhost:7221/MyHub", {
                 skipNegotiation: true,
                 transport: signalR.HttpTransportType.WebSockets
             }).build();
-            $("#conStatus").text(connection.q);
-            //Bağlantıyı başlatır async
-            connection.start().then(() => {
-                $("#conStatus").text(connection.q);
-            }).catch((err) => { console.log(err) });
-            //bağlanıyor
-            $("#conStatus").text(connection.q);
+            statusShow(1)
+            SignalRConnectionStart();
 
+            function SignalRConnectionStart() {
+
+                //Bağlantıyı başlatır async
+                connection.start().then(() => {
+                    statusShow(0)
+                }).catch((err) => {
+                    console.log(err);
+                    setTimeout(() => SignalRConnectionStart(), 2000);//2 saniye sonra eğer bağlantı gerçekleşmesse yeniden bağlantı dene bağlantı ilk açıldığında olmayabilir
+                });
+            }
+
+            //bağlanıyor (start async method olduğundan önce bu gösterir)
+            statusShow(1)
+
+            //kopma durumunda yeniden bağlanmayı deniyecek
+            connection.onreconnecting(err => {
+                statusShow(1);
+                console.log("onreconnection: " + err)
+            });
+
+            //yeniden bağlanması durumunda yapılcaklar
+            connection.onreconnected(() => {
+                statusShow(0);
+            });
+
+            //bağlantı sonlandırılması durumunda yapılaklar
+            connection.onclose(() => {
+                statusShow(0);
+                SignalRConnectionStart();
+            })
+
+            //click mesaj gönder
             $("#btnNameSave").click(() => {
                 connection.invoke("SendName", $("#txtName").val()).catch((err) => console.log(err))
             });
-
+            //on method hangi odaya bağlanıcağımızı söylemiş olduk odayı dinler
             connection.on("ReceiveName", (name) => {
                 $("#nameList").append(`<li class="list-group-item"> ${name} </li>`)
             })
+
+            //kullanıcı sayısı için açılan oda
+            connection.on("ReceiveClientCount", (clientCount) => {
+                $("#clientCount").text(clientCount);
+            });
+            //postman üzerinden api tarafında notificationcontroller
+            connection.on("Notify", (teamCount) => {
+                $("#notify").html(` <div class='alert alert-success'>${teamCount}</div>`)
+            });
+
+            function statusShow(statu) {
+                switch (statu) {
+                    case 0: $("#loading").hide(); break;
+                    case 1: $("#loading").show(); break;
+                }
+                $("#conStatus").text(connection.q);
+            }
 
         });
 
@@ -38,6 +82,14 @@
 }
 
     <div class="row">
+
+        
+        <span class="bg-dark text-white fst-italic position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center" style="width:150px;height:150px;">
+            <div>
+                     Aktif <br /> Katılımcı <br /> Sayısı <br /> <strong id="clientCount"></strong>
+            </div>
+       
+        </span>
         <div class="col-md-8 offset-2">
             <input class="form-control" type="text" id="txtName" /> <hr />
             <button class="btn btn-primary" id="btnNameSave">İsim Kaydet</button>
@@ -46,9 +98,10 @@
                     <div class="float-start">
                         Bağlantı durumu: <strong id="conStatus"></strong>
                     </div>
-                    <div class="float-end">
+
+                    <div class="float-end" id="loading">
                         <div class="col">
-                            <strong class="text-success"><span class="fw-bolder fs-5 text-primary">Y</span>ükleniy</strong>
+                            <strong class="text-success"><span class="fw-bolder fs-5 text-primary">B</span>ağlanıy</strong>
                             <!-- aria-hidden="true" ekran okuyucadan kaçır -->
                             <div class="spinner-border spinner-border-sm text-danger  ms-auto" role="status" aria-hidden="true">
                             </div>
@@ -58,6 +111,8 @@
                 </div>
 
             </div>
+            <div  id="notify"></div>
+
         </div>
     </div>
 

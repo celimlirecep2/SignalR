@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\MyFolders\\SignalR\\SignalRApp\\signalRApp.API\\SignalRApp.API.csproj": {}
+    "D:\\MyFolders\\SignalR\\SignalRApp\\SignalRApp.API\\SignalRApp.API.csproj": {}
   },
   "projects": {
-    "D:\\MyFolders\\SignalR\\SignalRApp\\signalRApp.API\\SignalRApp.API.csproj": {
+    "D:\\MyFolders\\SignalR\\SignalRApp\\SignalRApp.API\\SignalRApp.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\MyFolders\\SignalR\\SignalRApp\\signalRApp.API\\SignalRApp.API.csproj",
+        "projectUniqueName": "D:\\MyFolders\\SignalR\\SignalRApp\\SignalRApp.API\\SignalRApp.API.csproj",
         "projectName": "SignalRApp.API",
-        "projectPath": "D:\\MyFolders\\SignalR\\SignalRApp\\signalRApp.API\\SignalRApp.API.csproj",
+        "projectPath": "D:\\MyFolders\\SignalR\\SignalRApp\\SignalRApp.API\\SignalRApp.API.csproj",
         "packagesPath": "C:\\Users\\Recep-Celimli\\.nuget\\packages\\",
-        "outputPath": "D:\\MyFolders\\SignalR\\SignalRApp\\signalRApp.API\\obj\\",
+        "outputPath": "D:\\MyFolders\\SignalR\\SignalRApp\\SignalRApp.API\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Recep-Celimli\\AppData\\Roaming\\NuGet\\NuGet.Config",
