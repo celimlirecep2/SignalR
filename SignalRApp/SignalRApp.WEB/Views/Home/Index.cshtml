@@ -8,9 +8,9 @@
 
         $(document).ready(() => {
 
-            //bağlantı oluşturulur - LogLevel.Information: information sonrası için log mesajları alınır
+            //bağlantı oluşturulur - LogLevel.Information: information sonrası için log mesajları alınır-> HubConnectionBuilder().configureLogging(signalR.LogLevel.Error)
             //withAutomaticReconnect() - otomatik olarak bağlantı kesildiğinde yeniden bağlanmaya çalışır 4 kere dener olmassa sonlandırır[1saniye,1saniye,3saniye,10saniye]
-            var connection = new signalR.HubConnectionBuilder().configureLogging(signalR.LogLevel.Error).withAutomaticReconnect([1000, 1000, 3000, 10000]).withUrl("https://localhost:7221/MyHub", {
+            var connection = new signalR.HubConnectionBuilder().withAutomaticReconnect([1000, 1000, 3000, 10000]).withUrl("https://localhost:7221/MyHub", {
                 skipNegotiation: true,
                 transport: signalR.HttpTransportType.WebSockets
             }).build();
@@ -23,7 +23,8 @@
                 connection.start().then(() => {
                     statusShow(0);
 
-                    startListenRoom();//ilk oda açıldığında mesajları getirir
+                    //startListenRoom();//ilk oda açıldığında mesajları getirir (all method)
+                    GetStartGroupMessage();
                 }).catch((err) => {
                     console.log(err);
                     setTimeout(() => SignalRConnectionStart(), 2000);//2 saniye sonra eğer bağlantı gerçekleşmesse yeniden bağlantı dene bağlantı ilk açıldığında olmayabilir
@@ -47,15 +48,48 @@
             //bağlantı sonlandırılması durumunda yapılaklar
             connection.onclose(() => {
                 statusShow(0);
+                console.log("Bağlantı sonlandırıldı, Yeniden başlatma deneniyor...")
                 SignalRConnectionStart();
             })
 
             //click mesaj gönder
             //MyHub içerisindeki fonksiyonların çalıştırılması sağlanmış olur(invoke)
-            $("#btnNameSave").click(() => {
-                connection.invoke("SendName", $("#txtName").val()).catch((err) => console.log(err))
+            //$("#btnNameSave").click(() => {
+            //    connection.invoke("SendName", $("#txtName").val()).catch((err) => console.log(err))
+            //});
+
+            //takımlara göre yazma için oluşturulmuş click
+            $("#btnNameTeam").click(() => {
+                let name = $("#txtName").val();
+                let teamName = $("input[type=radio]:checked").val();
+                if (teamName == null) {
+                    alert("Lütfen bir takım seçiniz!");
+                    return;
+                }
+                connection.invoke("SendNameByGroup", name, teamName).catch((err) => {
+                    console.log(err);
+                });
             });
-           
+
+            $("#btnProduct").click(() => {
+                let product = { "Id": 1, "Name": "Kalem", "Price": 100, "Stock": 200 };
+                connection.invoke("SendProduct", product);
+            });
+
+            //takımlar seçimi
+            $("input[type=radio]").change(() => {
+                let teamName = $("input[type=radio]:checked").val();
+                if (teamName == "Team A") {
+                    connection.invoke("AddToGroup", teamName);
+                    connection.invoke("RemoveGroup", "Team B");
+                }
+                else {
+                    connection.invoke("AddToGroup", teamName);
+                    connection.invoke("RemoveGroup", "Team A");
+                }
+            });
+
+
             function startListenRoom() {
                 connection.invoke("GetNames");//fonksiyonu çalıştırarak önceden yazılmış isimler varsa onları odaya getirir
                 //Getirilen ilk kayıtların yazılmasını sağlar
@@ -66,24 +100,55 @@
                     });
                 });
             }
-             //on method hangi odaya bağlanıcağımızı söylemiş olduk odayı dinler
+
+            function GetStartGroupMessage() {
+                connection.invoke("GetNamesByGroup");
+
+                connection.on("ReceiveNamesByGroup", (teams) => {
+                    var obj = JSON.parse(teams);
+                    obj.forEach((team, index) => {
+                        let listName = team.teamId == 1 ? "ATeamList" : "BTeamList";
+                        team.Users.forEach((user, index2) => {
+                            $(`#${listName}`).append(`<li class="list-group-item">${user.Name}</li>`)
+                        });
+                    })
+                });
+                console.log("burda")
+
+            }
+
+
+            //on method hangi odaya bağlanıcağımızı söylemiş olduk odayı dinler
             //odaya sonradan eklenen kayıtları döner
-            connection.on("ReceiveName", (name) => {
-                $("#nameList").append(`<li class="list-group-item"> ${name} </li>`)
-            });
+            //connection.on("ReceiveName", (name) => {
+            //    $("#nameList").append(`<li class="list-group-item"> ${name} </li>`)
+            //});
 
             //kullanıcı sayısı için açılan oda
             connection.on("ReceiveClientCount", (clientCount) => {
                 $("#clientCount").text(clientCount);
             });
+
             //postman üzerinden api tarafında notificationcontroller
             connection.on("Notify", (teamCount) => {
                 $("#notify").html(` <div class='alert alert-success'>${teamCount}</div>`)
             });
 
+            connection.on("ReceiveProduct", (product) => {
+                console.log(product)
+                //$("#productList").append(`<li class="list-group-item">${name}</li>`)
+            });
+
             connection.on("Error", (err) => {
                 alert(err);
             })
+
+            //teamMessage yazdırılır
+            connection.on("ReceiveMessageByGroup", (name, teamId) => {
+
+                let listName = teamId == 1 ? "ATeamList" : "BTeamList";
+                $(`#${listName}`).append(`<li class="list-group-item">${name}</li>`)
+            });
 
             function statusShow(statu) {
                 switch (statu) {
@@ -100,41 +165,70 @@
     </script>
 }
 
+
+    <span class="bg-dark text-white fst-italic position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center" style="width:150px;height:150px;">
+        Aktif <br /> Katılımcı <br /> Sayısı <br /> <strong id="clientCount"></strong>
+    </span>
+
     <div class="row">
-
-
-        <span class="bg-dark text-white fst-italic position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center" style="width:150px;height:150px;">
-            <div>
-                Aktif <br /> Katılımcı <br /> Sayısı <br /> <strong id="clientCount"></strong>
-            </div>
-
-        </span>
-        <div class="col-md-8 offset-2">
-            <input class="form-control" type="text" id="txtName" /> <hr />
-            <button class="btn btn-primary" id="btnNameSave">İsim Kaydet</button>
-            <div class="alert alert-info">
-                <div class="clearfix">
-                    <div class="float-start">
-                        Bağlantı durumu: <strong id="conStatus"></strong>
-                    </div>
-
-                    <div class="float-end" id="loading">
-                        <div class="col">
-                            <strong class="text-success"><span class="fw-bolder fs-5 text-primary">B</span>ağlanıy</strong>
-                            <!-- aria-hidden="true" ekran okuyucadan kaçır -->
-                            <div class="spinner-border spinner-border-sm text-danger  ms-auto" role="status" aria-hidden="true">
-                            </div>
-                            <strong class="text-success">r<span class="text-dark">...</span></strong>
+        <div class="col-md-6 offset-md-3 alert alert-info mt-3">
+            <div class="clearfix">
+                <div class="float-start">
+                    Bağlantı durumu: <strong id="conStatus"></strong>
+                </div>
+                <div class="float-end" id="loading">
+                    <div class="col">
+                        <strong class="text-success"><span class="fw-bolder fs-5 text-primary">B</span>ağlanıy</strong>
+                        <!-- aria-hidden="true" ekran okuyucadan kaçır -->
+                        <div class="spinner-border spinner-border-sm text-danger  ms-auto" role="status" aria-hidden="true">
                         </div>
+                        <strong class="text-success">r<span class="text-dark">...</span></strong>
                     </div>
                 </div>
+            </div>
+        </div>
 
+        <div class="col-md-8 offset-2">
+            <input class="form-control" type="text" id="txtName" /> <hr />
+            <div class="btn-group">
+                <button class="btn btn-primary" id="btnNameSave">İsim Kaydet</button>
+                <button class="btn btn-warning" id="btnNameTeam">İsim Kaydet(Takım)</button>
+                <button class="btn btn-danger" id="btnProduct">Ürün kaydet(console ekranı)</button>
             </div>
             <div id="notify"></div>
-
         </div>
     </div>
 
-    <div class="col-md-8 offset-2">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="TeamGroup" value="Team A" />
+                <label class="form-check-label">A Takımı</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="TeamGroup" value="Team B" />
+                <label class="form-check-label">B Takımı</label>
+            </div>
+        </div>
+        <div class="col-md-8 offset-md-2">
+            <div class="row">
+                <div class="col-md-6">
+                    <h2>A Takımı</h2> <hr />
+                    <ul class="list-group " id="ATeamList"></ul>
+                </div>
+                <div class="col-md-6">
+                    <h2>B Takımı</h2><hr />
+                    <ul class="list-group " id="BTeamList"></ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-md-8 offset-2 mt-5">
         <ul id="nameList" class="list-group"></ul>
     </div>
+    <div class="col-md-8 offset-2 mt-5">
+        <ul id="productList" class="list-group"></ul>
+    </div>
+

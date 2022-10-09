@@ -1,6 +1,29 @@
 ﻿@{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+
+@section Scripts{
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script type="text/javascript">
+
+        var connection = new signalR.HubConnectionBuilder().withAutomaticReconnect([1000, 1000, 3000, 10000]).withUrl("https://localhost:7093/MyHubWeb", {
+            skipNegotiation: true,
+            transport: signalR.HttpTransportType.WebSockets
+        }).build();
+
+        connection.start().then(() => {
+            console.log(connection.q);
+            connection.invoke("SendMessage","Merhaba");
+        }).catch((err) => {
+            console.log(err);
+        });
+
+connection.on("ReceiveMessage", (message) => {
+    $("#isimdeneme").append(`<h2>${message}</h2>`)
+});
+
+
+    </script>
+}
+<div id="isimdeneme"></div>

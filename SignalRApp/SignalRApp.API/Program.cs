@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using SignalRApp.API.Hubs;
+using SignalRApp.API.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,12 +13,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 builder.Services.AddCors(opt =>
 {
-    
     opt.AddPolicy("CorsPolicy", builder =>
     {
         builder.WithOrigins("https://localhost:7093/MyHub").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     });
 });
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("MyLocalDbSQLite")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("MyLocalDbSQLite")));
+
 
 
 var app = builder.Build();
@@ -36,16 +40,8 @@ app.UseCors("CorsPolicy");//maphub dan önce çaðýrýlmalý
 
 app.UseAuthorization();
 
-//app.MapHub<MyHub>("/chatHub");
-
-
 app.MapControllers();
-//middleware
-//app.UseEndpoints(endpoints =>
-//{
-//    endpoints.MapHub<MyHub>("/MyHub");
-//});
-
+//*
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapHub<MyHub>("/MyHub");
