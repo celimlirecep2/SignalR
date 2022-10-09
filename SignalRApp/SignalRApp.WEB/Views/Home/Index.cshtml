@@ -21,7 +21,9 @@
 
                 //Bağlantıyı başlatır async
                 connection.start().then(() => {
-                    statusShow(0)
+                    statusShow(0);
+
+                    startListenRoom();//ilk oda açıldığında mesajları getirir
                 }).catch((err) => {
                     console.log(err);
                     setTimeout(() => SignalRConnectionStart(), 2000);//2 saniye sonra eğer bağlantı gerçekleşmesse yeniden bağlantı dene bağlantı ilk açıldığında olmayabilir
@@ -49,13 +51,26 @@
             })
 
             //click mesaj gönder
+            //MyHub içerisindeki fonksiyonların çalıştırılması sağlanmış olur(invoke)
             $("#btnNameSave").click(() => {
                 connection.invoke("SendName", $("#txtName").val()).catch((err) => console.log(err))
             });
-            //on method hangi odaya bağlanıcağımızı söylemiş olduk odayı dinler
+           
+            function startListenRoom() {
+                connection.invoke("GetNames");//fonksiyonu çalıştırarak önceden yazılmış isimler varsa onları odaya getirir
+                //Getirilen ilk kayıtların yazılmasını sağlar
+                connection.on("ReceiveNames", (names) => {
+                    $("#nameList").empty();
+                    names.forEach((item, index) => {
+                        $("#nameList").append(`<li class="list-group-item"> ${item} </li>`)
+                    });
+                });
+            }
+             //on method hangi odaya bağlanıcağımızı söylemiş olduk odayı dinler
+            //odaya sonradan eklenen kayıtları döner
             connection.on("ReceiveName", (name) => {
                 $("#nameList").append(`<li class="list-group-item"> ${name} </li>`)
-            })
+            });
 
             //kullanıcı sayısı için açılan oda
             connection.on("ReceiveClientCount", (clientCount) => {
@@ -65,6 +80,10 @@
             connection.on("Notify", (teamCount) => {
                 $("#notify").html(` <div class='alert alert-success'>${teamCount}</div>`)
             });
+
+            connection.on("Error", (err) => {
+                alert(err);
+            })
 
             function statusShow(statu) {
                 switch (statu) {
@@ -83,12 +102,12 @@
 
     <div class="row">
 
-        
+
         <span class="bg-dark text-white fst-italic position-absolute top-0 end-0 rounded-circle d-flex justify-content-center align-items-center" style="width:150px;height:150px;">
             <div>
-                     Aktif <br /> Katılımcı <br /> Sayısı <br /> <strong id="clientCount"></strong>
+                Aktif <br /> Katılımcı <br /> Sayısı <br /> <strong id="clientCount"></strong>
             </div>
-       
+
         </span>
         <div class="col-md-8 offset-2">
             <input class="form-control" type="text" id="txtName" /> <hr />
@@ -111,7 +130,7 @@
                 </div>
 
             </div>
-            <div  id="notify"></div>
+            <div id="notify"></div>
 
         </div>
     </div>
