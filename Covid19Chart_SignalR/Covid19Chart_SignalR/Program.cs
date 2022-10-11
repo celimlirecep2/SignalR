@@ -12,7 +12,7 @@ builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("CorsPolicy", builder =>
     {
-        builder.WithOrigins("https://localhost:7155/MyHub").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        builder.WithOrigins("https://localhost:7155", "http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     });
 });
 
